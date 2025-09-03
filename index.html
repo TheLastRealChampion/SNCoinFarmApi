@@ -1559,19 +1559,6 @@ let accountGenRunning = false;
       }
     }
 
-    function downloadLog() {
-      const logContent = logEntries.join('\n');
-      const blob = new Blob([logContent], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `bruteforce_log_${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
     async function startBruteforce() {
       if (bruteforceRunning) return;
 
@@ -1630,7 +1617,6 @@ let accountGenRunning = false;
         if (foundValid) {
           output.textContent += `Valid token found: ${results.find(r => r.result?.resultCode === 1).token}\n`;
           logEntries.push(`Summary: Total Tokens Generated: ${totalTokensGenerated}, Failed Attempts: ${failedAttempts}`);
-          downloadLog();
           stopBruteforce();
         } else if (bruteforceRunning) {
           setTimeout(tryTokenBatch, 0);
@@ -1643,7 +1629,6 @@ let accountGenRunning = false;
         output.textContent += errorMsg + '\n';
         output.scrollTop = output.scrollHeight;
         logEntries.push(`Summary: Total Tokens Generated: ${totalTokensGenerated}, Failed Attempts: ${failedAttempts}`);
-        downloadLog();
         stopBruteforce();
       });
     }
@@ -1654,7 +1639,6 @@ let accountGenRunning = false;
       output.textContent += `Photon token bruteforce stopped. Failed Attempts: ${failedAttempts}\n`;
       output.scrollTop = output.scrollHeight;
       logEntries.push(`Summary: Total Tokens Generated: ${totalTokensGenerated}, Failed Attempts: ${failedAttempts}`);
-      downloadLog();
     }
 
   function toggleBruteforceRedeemCoupon() {
@@ -1775,7 +1759,6 @@ function toggleAccountGenerator() {
     document.getElementById("accountGenToggleButton").textContent = "Start Account Generator";
     const output = document.getElementById("accountGenOutput");
     output.textContent += "\nGenerator stopped manually.\n";
-    downloadAccountLog();
     return;
   }
 
@@ -1970,19 +1953,6 @@ function toggleAccountGenerator() {
   }
 
   runAccountGenCycle();
-}
-
-function downloadAccountLog() {
-  const logContent = accountLogEntries.join('\n---\n');
-  const blob = new Blob([logContent], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `account_gen_log_${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 }
 
   </script>
