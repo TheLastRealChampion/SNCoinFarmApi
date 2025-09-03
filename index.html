@@ -1850,21 +1850,48 @@ function toggleAccountGenerator() {
       }
 
       // Step 4: GetUserData
+      const getUserDataBody = {
+        PlayFabId: "A8BF447B410EC770"
+      };
       const userDataRes = await fetch('https://c6252.playfabapi.com/Client/GetUserData', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Authorization': newSessionTicket
         },
-        body: JSON.stringify({})
+        body: JSON.stringify(getUserDataBody)
       });
       const userData = await userDataRes.json();
       log += `GetUserData: ${JSON.stringify(userData)}\n`;
       if (userData.error) {
         throw new Error(userData.error);
       }
+      const loadoutValue = userData.data.Data.loadout?.Value;
+      if (!loadoutValue) {
+        throw new Error("No loadout value found in GetUserData response");
+      }
 
-      // Step 5: GetCatalogItems
+      // Step 5: UpdateUserData
+      const updateUserDataBody = {
+        Data: {
+          loadout: loadoutValue
+        }
+      };
+      const updateUserDataRes = await fetch('https://c6252.playfabapi.com/Client/UpdateUserData', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Authorization': newSessionTicket
+        },
+        body: JSON.stringify(updateUserDataBody)
+      });
+      const updateUserData = await updateUserDataRes.json();
+      log += `UpdateUserData: ${JSON.stringify(updateUserData)}\n`;
+      if (updateUserData.error) {
+        throw new Error(updateUserData.error);
+      }
+
+      // Step 6: GetCatalogItems
       const catalogItemsBody = {
         CatalogVersion: "Ingame"
       };
@@ -1882,7 +1909,7 @@ function toggleAccountGenerator() {
         throw new Error(catalogItemsData.error);
       }
 
-      // Step 6: GetUserInventory
+      // Step 7: GetUserInventory
       const inventoryRes = await fetch('https://c6252.playfabapi.com/Client/GetUserInventory', {
         method: 'POST',
         headers: {
@@ -1897,7 +1924,34 @@ function toggleAccountGenerator() {
         throw new Error(inventoryData.error);
       }
 
-      // Step 7: applyLicenseAgreement
+      // Step 8: ExecuteCloudScript (fetchInfo)
+      const fetchInfoBody = {
+        CustomTags: null,
+        FunctionName: "fetchInfo",
+        FunctionParameter: {
+          ids: ["PUNISHMENT", "QUESTS", "REPORTS", "UCODE", "LICENSE_AGREEMENT", "SEASON_AND_EVENT", "GAMES_COUNT", "EXTERNAL_LOCALIZATION_TERMS", "TIME_LIMITED_EVENTS_SECTION", "LEVELING"],
+          args: "{\"quests\":{\"̑̍̊̈̅̐̐̈̐̅̏\":\"IOS\"}}"
+        },
+        GeneratePlayStreamEvent: true,
+        RevisionSelection: null,
+        SpecificRevision: null,
+        AuthenticationContext: null
+      };
+      const fetchInfoRes = await fetch('https://c6252.playfabapi.com/Client/ExecuteCloudScript', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Authorization': newSessionTicket
+        },
+        body: JSON.stringify(fetchInfoBody)
+      });
+      const fetchInfoData = await fetchInfoRes.json();
+      log += `FetchInfo: ${JSON.stringify(fetchInfoData)}\n`;
+      if (fetchInfoData.error) {
+        throw new Error(fetchInfoData.error);
+      }
+
+      // Step 9: applyLicenseAgreement
       const licenseBody = {
         CustomTags: null,
         FunctionName: "applyLicenseAgreement",
@@ -1921,7 +1975,7 @@ function toggleAccountGenerator() {
         throw new Error(licenseData.error);
       }
 
-      // Step 8: setLevelProgressionForClass
+      // Step 10: setLevelProgressionForClass
       const receivedXpps = 1;
       const levelProgression = {
         playerLevel: 9990,
@@ -1970,7 +2024,7 @@ function toggleAccountGenerator() {
         throw new Error(setLevelData.error);
       }
 
-      // Step 9: refreshLeaderboardPlatform
+      // Step 11: refreshLeaderboardPlatform
       const platforms = ['IOS', 'PS4'];
       const randomPlatform = platforms[Math.floor(Math.random() * platforms.length)];
       const refreshBody = {
