@@ -199,7 +199,7 @@
   <div class="container">
     <div class="section">
       <h2>📄 How to Get Your SessionTicket with Requestly</h2>
-      <ol>
+      <ol> 
         <li>Download the Requestly desktop app from <a href="https://docs.requestly.com/general/sessions/record-api-sessions" target="_blank">here</a>.</li>
         <li>Open Requestly and start recording network traffic.</li>
         <li>Log into your game or app using PlayFab.</li>
@@ -1834,7 +1834,70 @@ function toggleAccountGenerator() {
         throw new Error(updateNameData.error);
       }
 
-      // Step 3: applyLicenseAgreement
+      // Step 3: GetTitleData
+      const titleDataRes = await fetch('https://c6252.playfabapi.com/Client/GetTitleData', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Authorization': newSessionTicket
+        },
+        body: JSON.stringify({})
+      });
+      const titleData = await titleDataRes.json();
+      log += `GetTitleData: ${JSON.stringify(titleData)}\n`;
+      if (titleData.error) {
+        throw new Error(titleData.error);
+      }
+
+      // Step 4: GetUserData
+      const userDataRes = await fetch('https://c6252.playfabapi.com/Client/GetUserData', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Authorization': newSessionTicket
+        },
+        body: JSON.stringify({})
+      });
+      const userData = await userDataRes.json();
+      log += `GetUserData: ${JSON.stringify(userData)}\n`;
+      if (userData.error) {
+        throw new Error(userData.error);
+      }
+
+      // Step 5: GetCatalogItems
+      const catalogItemsBody = {
+        CatalogVersion: "Ingame"
+      };
+      const catalogItemsRes = await fetch('https://c6252.playfabapi.com/Client/GetCatalogItems', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Authorization': newSessionTicket
+        },
+        body: JSON.stringify(catalogItemsBody)
+      });
+      const catalogItemsData = await catalogItemsRes.json();
+      log += `GetCatalogItems: ${JSON.stringify(catalogItemsData)}\n`;
+      if (catalogItemsData.error) {
+        throw new Error(catalogItemsData.error);
+      }
+
+      // Step 6: GetUserInventory
+      const inventoryRes = await fetch('https://c6252.playfabapi.com/Client/GetUserInventory', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Authorization': newSessionTicket
+        },
+        body: JSON.stringify({})
+      });
+      const inventoryData = await inventoryRes.json();
+      log += `GetUserInventory: ${JSON.stringify(inventoryData)}\n`;
+      if (inventoryData.error) {
+        throw new Error(inventoryData.error);
+      }
+
+      // Step 7: applyLicenseAgreement
       const licenseBody = {
         CustomTags: null,
         FunctionName: "applyLicenseAgreement",
@@ -1858,26 +1921,26 @@ function toggleAccountGenerator() {
         throw new Error(licenseData.error);
       }
 
-      // Step 4: setLevelProgressionForClass
+      // Step 8: setLevelProgressionForClass
       const receivedXpps = 1;
       const levelProgression = {
-        playerLevel: 2147483648,
+        playerLevel: 9990,
         classLevel: [
-          { classId: "Bagman", XP: 959, XpToNextLevel: 2730, level: 10000, availablePerkSlotsCount: 3 },
-          { classId: "Brave", XP: 503, XpToNextLevel: 2790, level: 10000, availablePerkSlotsCount: 3 },
-          { classId: "Detective", XP: 1304, XpToNextLevel: 5280, level: 10000, availablePerkSlotsCount: 3 },
-          { classId: "Inventor", XP: 3196, XpToNextLevel: 3630, level: 10000, availablePerkSlotsCount: 3 },
-          { classId: "Leader", XP: 2403, XpToNextLevel: 4170, level: 10000, availablePerkSlotsCount: 3 },
-          { classId: "RandomExplorer", XP: 0, XpToNextLevel: 300, level: 10000, availablePerkSlotsCount: 3 },
-          { classId: "Scout", XP: 12333, XpToNextLevel: 21720, level: 10000, availablePerkSlotsCount: 3 },
-          { classId: "BasicNeighbor", XP: 864, XpToNextLevel: 900, level: 10000, availablePerkSlotsCount: 3 },
-          { classId: "ButcherNeighbor", XP: 5841, XpToNextLevel: 6690, level: 10000, availablePerkSlotsCount: 3 },
-          { classId: "ClownNeighbor", XP: 434, XpToNextLevel: 480, level: 10000, availablePerkSlotsCount: 3 },
-          { classId: "GhostNeighbor", XP: 49, XpToNextLevel: 2370, level: 10000, availablePerkSlotsCount: 3 },
-          { classId: "GuestNeighbor", XP: 1603, XpToNextLevel: 1830, level: 10000, availablePerkSlotsCount: 3 },
-          { classId: "RandomNeighbor", XP: 12333, XpToNextLevel: 21720, level: 10000, availablePerkSlotsCount: 3 },
-          { classId: "Quentin", XP: 50, XpToNextLevel: 840, level: 10000, availablePerkSlotsCount: 3 },
-          { classId: "HunterNeighbor", XP: 0, XpToNextLevel: 300, level: 10000, availablePerkSlotsCount: 3 }
+          { classId: "Bagman", XP: 959, XpToNextLevel: 2730, level: 666, availablePerkSlotsCount: 3 },
+          { classId: "Brave", XP: 503, XpToNextLevel: 2790, level: 666, availablePerkSlotsCount: 3 },
+          { classId: "Detective", XP: 1304, XpToNextLevel: 5280, level: 666, availablePerkSlotsCount: 3 },
+          { classId: "Inventor", XP: 3196, XpToNextLevel: 3630, level: 666, availablePerkSlotsCount: 3 },
+          { classId: "Leader", XP: 2403, XpToNextLevel: 4170, level: 666, availablePerkSlotsCount: 3 },
+          { classId: "RandomExplorer", XP: 0, XpToNextLevel: 300, level: 666, availablePerkSlotsCount: 3 },
+          { classId: "Scout", XP: 12333, XpToNextLevel: 21720, level: 666, availablePerkSlotsCount: 3 },
+          { classId: "BasicNeighbor", XP: 864, XpToNextLevel: 900, level: 666, availablePerkSlotsCount: 3 },
+          { classId: "ButcherNeighbor", XP: 5841, XpToNextLevel: 6690, level: 666, availablePerkSlotsCount: 3 },
+          { classId: "ClownNeighbor", XP: 434, XpToNextLevel: 480, level: 666, availablePerkSlotsCount: 3 },
+          { classId: "GhostNeighbor", XP: 49, XpToNextLevel: 2370, level: 666, availablePerkSlotsCount: 3 },
+          { classId: "GuestNeighbor", XP: 1603, XpToNextLevel: 1830, level: 666, availablePerkSlotsCount: 3 },
+          { classId: "RandomNeighbor", XP: 12333, XpToNextLevel: 21720, level: 666, availablePerkSlotsCount: 3 },
+          { classId: "Quentin", XP: 50, XpToNextLevel: 840, level: 666, availablePerkSlotsCount: 3 },
+          { classId: "HunterNeighbor", XP: 0, XpToNextLevel: 300, level: 666, availablePerkSlotsCount: 3 }
         ]
       };
       const setLevelBody = {
@@ -1907,7 +1970,7 @@ function toggleAccountGenerator() {
         throw new Error(setLevelData.error);
       }
 
-      // Step 5: refreshLeaderboardPlatform
+      // Step 9: refreshLeaderboardPlatform
       const platforms = ['IOS', 'PS4'];
       const randomPlatform = platforms[Math.floor(Math.random() * platforms.length)];
       const refreshBody = {
@@ -1948,7 +2011,7 @@ function toggleAccountGenerator() {
     output.scrollTop = output.scrollHeight;
 
     if (accountGenRunning) {
-      setTimeout(runAccountGenCycle, 0);
+      runAccountGenCycle();
     }
   }
 
