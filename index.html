@@ -200,6 +200,11 @@
     <div class="section">
       <h2>📄 How to Get Your SessionTicket with Requestly</h2>
       <ol>
+        <li>Download the Requestly desktop app from <a href="https://docs.requestly.com/general/sessions/record-api-sessions" target="_blank">here</a>.</li>
+        <li>Open Requestly and start recording network traffic.</li>
+        <li>Log into your game or app using PlayFab.</li>
+        <li>Find the request to <code>/Client/LoginWithSteam</code> or similar.</li>
+        <li>Copy the <code>SessionTicket</code> or <code>X-Authorization</code> from the response body.</li>
         <li>Paste it into the field above and click "Set Token".</li>
       </ol>
     </div>
