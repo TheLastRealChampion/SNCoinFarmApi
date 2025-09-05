@@ -1559,6 +1559,19 @@ let accountGenRunning = false;
       }
     }
 
+    function downloadLog() {
+      const logContent = logEntries.join('\n');
+      const blob = new Blob([logContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bruteforce_log_${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
     async function startBruteforce() {
       if (bruteforceRunning) return;
 
@@ -1776,6 +1789,9 @@ function toggleAccountGenerator() {
   const output = document.getElementById("accountGenOutput");
   output.textContent = "Starting account generator...\n";
 
+  // Utility function to add delay
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
   async function runAccountGenCycle() {
     if (!accountGenRunning) return;
 
@@ -1806,251 +1822,161 @@ function toggleAccountGenerator() {
       const newSessionTicket = loginData.data.SessionTicket;
       const playFabId = loginData.data.PlayFabId;
 
-      // Step 2: UpdateUserTitleDisplayName
-      function generateRandomSuffix(length = 4) {
-        const chars = '0123456789';
-        let suffix = '';
-        for (let i = 0; i < length; i++) {
-          suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+      // Step 2: Get Leaderboard for random player IDs
+      const ps4Stats = [
+        "LeaderBoard_AccountLevelPS4",
+        "LeaderBoard_BagmanPS4",
+        "LeaderBoard_BravePS4",
+        "LeaderBoard_DetectivePS4",
+        "LeaderBoard_InventorPS4",
+        "LeaderBoard_LeaderPS4",
+        "LeaderBoard_QuentinPS4",
+        "LeaderBoard_ScoutPS4",
+        "LeaderBoard_BasicNeighborPS4",
+        "LeaderBoard_ButcherNeighborPS4",
+        "LeaderBoard_ClownNeighborPS4",
+        "LeaderBoard_GhostNeighborPS4",
+        "LeaderBoard_GuestNeighborPS4",
+        "LeaderBoard_HunterNeighborPS4"
+      ];
+      const iosStats = [
+        "LeaderBoard_AccountLevelIOS",
+        "LeaderBoard_BagmanIOS",
+        "LeaderBoard_BraveIOS",
+        "LeaderBoard_DetectiveIOS",
+        "LeaderBoard_InventorIOS",
+        "LeaderBoard_LeaderIOS",
+        "LeaderBoard_QuentinIOS",
+        "LeaderBoard_ScoutIOS",
+        "LeaderBoard_BasicNeighborIOS",
+        "LeaderBoard_ButcherNeighborIOS",
+        "LeaderBoard_ClownNeighborIOS",
+        "LeaderBoard_GuestNeighborIOS",
+        "LeaderBoard_HunterNeighborIOS"
+      ];
+      const statisticNames = [...ps4Stats, ...iosStats];
+      const randomStatistic = statisticNames[Math.floor(Math.random() * statisticNames.length)];
+      const leaderboardBody = {
+        StatisticName: randomStatistic,
+        StartPosition: 0,
+        MaxResultsCount: 100
+      };
+      const leaderboardRes = await fetch('https://c6252.playfabapi.com/Client/GetLeaderboard', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Authorization': newSessionTicket
+        },
+        body: JSON.stringify(leaderboardBody)
+      });
+      const leaderboardData = await leaderboardRes.json();
+      log += `GetLeaderboard (${randomStatistic}): ${JSON.stringify(leaderboardData)}\n`;
+      if (leaderboardData.error) {
+        throw new Error(leaderboardData.error);
+      }
+      const playerEntries = leaderboardData.data.Leaderboard || [];
+      if (playerEntries.length < 5) {
+        throw new Error("Not enough players in leaderboard");
+      }
+
+      // Pick 5 random unique player IDs
+      const randomPlayerIds = [];
+      const usedIndices = new Set();
+      while (randomPlayerIds.length < 5 && usedIndices.size < playerEntries.length) {
+        const idx = Math.floor(Math.random() * playerEntries.length);
+        if (!usedIndices.has(idx)) {
+          usedIndices.add(idx);
+          const pid = playerEntries[idx].PlayFabId;
+          if (pid !== playFabId) {
+            randomPlayerIds.push(pid);
+          }
         }
-        return suffix;
+      }
+      if (randomPlayerIds.length < 5) {
+        throw new Error("Could not find enough unique player IDs");
       }
 
-      const displayNameWithSuffix = `${displayName}_${generateRandomSuffix()}`;
-      const updateNameBody = {
-        DisplayName: displayNameWithSuffix
-      };
-      const updateNameRes = await fetch('https://c6252.playfabapi.com/Client/UpdateUserTitleDisplayName', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Authorization': newSessionTicket
-        },
-        body: JSON.stringify(updateNameBody)
-      });
-      const updateNameData = await updateNameRes.json();
-      log += `UpdateName: ${JSON.stringify(updateNameData)}\n`;
-      if (updateNameData.error) {
-        throw new Error(updateNameData.error);
-      }
+      const playerIds = [playFabId, ...randomPlayerIds];
 
-      // Step 3: GetTitleData
-      const titleDataRes = await fetch('https://c6252.playfabapi.com/Client/GetTitleData', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Authorization': newSessionTicket
-        },
-        body: JSON.stringify({})
-      });
-      const titleData = await titleDataRes.json();
-      log += `GetTitleData: ${JSON.stringify(titleData)}\n`;
-      if (titleData.error) {
-        throw new Error(titleData.error);
-      }
-
-      // Step 4: GetUserData
-      const getUserDataBody = {
-        PlayFabId: "A8BF447B410EC770"
-      };
-      const userDataRes = await fetch('https://c6252.playfabapi.com/Client/GetUserData', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Authorization': newSessionTicket
-        },
-        body: JSON.stringify(getUserDataBody)
-      });
-      const userData = await userDataRes.json();
-      log += `GetUserData: ${JSON.stringify(userData)}\n`;
-      if (userData.error) {
-        throw new Error(userData.error);
-      }
-      const loadoutValue = userData.data.Data.loadout?.Value;
-      if (!loadoutValue) {
-        throw new Error("No loadout value found in GetUserData response");
-      }
-
-      // Step 5: UpdateUserData
-      const updateUserDataBody = {
-        Data: {
-          loadout: loadoutValue
-        }
-      };
-      const updateUserDataRes = await fetch('https://c6252.playfabapi.com/Client/UpdateUserData', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Authorization': newSessionTicket
-        },
-        body: JSON.stringify(updateUserDataBody)
-      });
-      const updateUserData = await updateUserDataRes.json();
-      log += `UpdateUserData: ${JSON.stringify(updateUserData)}\n`;
-      if (updateUserData.error) {
-        throw new Error(updateUserData.error);
-      }
-
-      // Step 6: GetCatalogItems
-      const catalogItemsBody = {
-        CatalogVersion: "Ingame"
-      };
-      const catalogItemsRes = await fetch('https://c6252.playfabapi.com/Client/GetCatalogItems', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Authorization': newSessionTicket
-        },
-        body: JSON.stringify(catalogItemsBody)
-      });
-      const catalogItemsData = await catalogItemsRes.json();
-      log += `GetCatalogItems: ${JSON.stringify(catalogItemsData)}\n`;
-      if (catalogItemsData.error) {
-        throw new Error(catalogItemsData.error);
-      }
-
-      // Step 7: GetUserInventory
-      const inventoryRes = await fetch('https://c6252.playfabapi.com/Client/GetUserInventory', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Authorization': newSessionTicket
-        },
-        body: JSON.stringify({})
-      });
-      const inventoryData = await inventoryRes.json();
-      log += `GetUserInventory: ${JSON.stringify(inventoryData)}\n`;
-      if (inventoryData.error) {
-        throw new Error(inventoryData.error);
-      }
-
-      // Step 8: ExecuteCloudScript (fetchInfo)
-      const fetchInfoBody = {
+      // startNewMatch
+      const startMatchBody = {
         CustomTags: null,
-        FunctionName: "fetchInfo",
+        FunctionName: "startNewMatch",
         FunctionParameter: {
-          ids: ["PUNISHMENT", "QUESTS", "REPORTS", "UCODE", "LICENSE_AGREEMENT", "SEASON_AND_EVENT", "GAMES_COUNT", "EXTERNAL_LOCALIZATION_TERMS", "TIME_LIMITED_EVENTS_SECTION", "LEVELING"],
-          args: "{\"quests\":{\"̑̍̊̈̅̐̐̈̐̅̏\":\"IOS\"}}"
+          roomType: "QUICK_GAME",
+          playerIds: playerIds
         },
         GeneratePlayStreamEvent: true,
         RevisionSelection: null,
         SpecificRevision: null,
         AuthenticationContext: null
       };
-      const fetchInfoRes = await fetch('https://c6252.playfabapi.com/Client/ExecuteCloudScript', {
+      const startRes = await fetch('https://c6252.playfabapi.com/Client/ExecuteCloudScript', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Authorization': newSessionTicket
         },
-        body: JSON.stringify(fetchInfoBody)
+        body: JSON.stringify(startMatchBody)
       });
-      const fetchInfoData = await fetchInfoRes.json();
-      log += `FetchInfo: ${JSON.stringify(fetchInfoData)}\n`;
-      if (fetchInfoData.error) {
-        throw new Error(fetchInfoData.error);
+      const startData = await startRes.json();
+      log += `StartNewMatch: ${JSON.stringify(startData)}\n`;
+      if (startData.error) {
+        throw new Error(startData.error);
       }
 
-      // Step 9: applyLicenseAgreement
-      const licenseBody = {
+      // decideSpecialRole
+      const decideBody = {
         CustomTags: null,
-        FunctionName: "applyLicenseAgreement",
-        FunctionParameter: {},
-        GeneratePlayStreamEvent: true,
-        RevisionSelection: null,
-        SpecificRevision: null,
-        AuthenticationContext: null
-      };
-      const licenseRes = await fetch('https://c6252.playfabapi.com/Client/ExecuteCloudScript', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Authorization': newSessionTicket
-        },
-        body: JSON.stringify(licenseBody)
-      });
-      const licenseData = await licenseRes.json();
-      log += `ApplyLicenseAgreement: ${JSON.stringify(licenseData)}\n`;
-      if (licenseData.error) {
-        throw new Error(licenseData.error);
-      }
-
-      // Step 10: setLevelProgressionForClass
-      const receivedXpps = 1;
-      const levelProgression = {
-        playerLevel: 9990,
-        classLevel: [
-          { classId: "Bagman", XP: 959, XpToNextLevel: 2730, level: 666, availablePerkSlotsCount: 3 },
-          { classId: "Brave", XP: 503, XpToNextLevel: 2790, level: 666, availablePerkSlotsCount: 3 },
-          { classId: "Detective", XP: 1304, XpToNextLevel: 5280, level: 666, availablePerkSlotsCount: 3 },
-          { classId: "Inventor", XP: 3196, XpToNextLevel: 3630, level: 666, availablePerkSlotsCount: 3 },
-          { classId: "Leader", XP: 2403, XpToNextLevel: 4170, level: 666, availablePerkSlotsCount: 3 },
-          { classId: "RandomExplorer", XP: 0, XpToNextLevel: 300, level: 666, availablePerkSlotsCount: 3 },
-          { classId: "Scout", XP: 12333, XpToNextLevel: 21720, level: 666, availablePerkSlotsCount: 3 },
-          { classId: "BasicNeighbor", XP: 864, XpToNextLevel: 900, level: 666, availablePerkSlotsCount: 3 },
-          { classId: "ButcherNeighbor", XP: 5841, XpToNextLevel: 6690, level: 666, availablePerkSlotsCount: 3 },
-          { classId: "ClownNeighbor", XP: 434, XpToNextLevel: 480, level: 666, availablePerkSlotsCount: 3 },
-          { classId: "GhostNeighbor", XP: 49, XpToNextLevel: 2370, level: 666, availablePerkSlotsCount: 3 },
-          { classId: "GuestNeighbor", XP: 1603, XpToNextLevel: 1830, level: 666, availablePerkSlotsCount: 3 },
-          { classId: "RandomNeighbor", XP: 12333, XpToNextLevel: 21720, level: 666, availablePerkSlotsCount: 3 },
-          { classId: "Quentin", XP: 50, XpToNextLevel: 840, level: 666, availablePerkSlotsCount: 3 },
-          { classId: "HunterNeighbor", XP: 0, XpToNextLevel: 300, level: 666, availablePerkSlotsCount: 3 }
-        ]
-      };
-      const setLevelBody = {
-        CustomTags: null,
-        FunctionName: "setLevelProgressionForClass",
+        FunctionName: "decideSpecialRole",
         FunctionParameter: {
-          classId: "BasicNeighbor",
-          receivedXP: receivedXpps,
-          currentLevelProgression: JSON.stringify(levelProgression)
+          roomType: "QUICK_GAME",
+          playerIds: playerIds
         },
         GeneratePlayStreamEvent: true,
         RevisionSelection: null,
         SpecificRevision: null,
         AuthenticationContext: null
       };
-      const setLevelRes = await fetch('https://c6252.playfabapi.com/Client/ExecuteCloudScript', {
+      const decideRes = await fetch('https://c6252.playfabapi.com/Client/ExecuteCloudScript', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Authorization': newSessionTicket
         },
-        body: JSON.stringify(setLevelBody)
+        body: JSON.stringify(decideBody)
       });
-      const setLevelData = await setLevelRes.json();
-      log += `SetLevel: ${JSON.stringify(setLevelData)}\n`;
-      if (setLevelData.error) {
-        throw new Error(setLevelData.error);
+      const decideData = await decideRes.json();
+      log += `DecideSpecialRole: ${JSON.stringify(decideData)}\n`;
+      if (decideData.error) {
+        throw new Error(decideData.error);
       }
 
-      // Step 11: refreshLeaderboardPlatform
-      const platforms = ['IOS', 'PS4'];
-      const randomPlatform = platforms[Math.floor(Math.random() * platforms.length)];
-      const refreshBody = {
+      // finishMatch
+      const finishBody = {
         CustomTags: null,
-        FunctionName: "refreshLeaderboardPlatform",
+        FunctionName: "finishMatch",
         FunctionParameter: {
-          currentLevelProgression: JSON.stringify(levelProgression),
-          platformName: randomPlatform
+          roomType: "QUICK_GAME",
+          playerIds: playerIds
         },
         GeneratePlayStreamEvent: true,
         RevisionSelection: null,
         SpecificRevision: null,
         AuthenticationContext: null
       };
-      const refreshRes = await fetch('https://c6252.playfabapi.com/Client/ExecuteCloudScript', {
+      const finishRes = await fetch('https://c6252.playfabapi.com/Client/ExecuteCloudScript', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Authorization': newSessionTicket
         },
-        body: JSON.stringify(refreshBody)
+        body: JSON.stringify(finishBody)
       });
-      const refreshData = await refreshRes.json();
-      log += `RefreshLeaderboard: ${JSON.stringify(refreshData)}\n`;
-      if (refreshData.error) {
-        throw new Error(refreshData.error);
+      const finishData = await finishRes.json();
+      log += `FinishMatch: ${JSON.stringify(finishData)}\n`;
+      if (finishData.error) {
+        throw new Error(finishData.error);
       }
 
       generatedAccounts++;
